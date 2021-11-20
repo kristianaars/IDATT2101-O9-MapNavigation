@@ -8,12 +8,54 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
 
+/***
+ * MapGraph contains the datastructure of a roadmap. The structure is built up as a weighted graph.
+ */
 public class MapGraph {
 
     int nodeCount, edgeCount;
     ArrayList<Node> nodes;
 
-    public static MapGraph readFromInputStream(InputStream intersectionNodes, InputStream roadEdges) throws IOException {
+    /**
+     * Initiate using MapGraph.buildFromInputStream()
+     */
+    private MapGraph() {}
+
+    public void dijkstrasAlgorithm(Node startNode, Node endNode) {
+        PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
+        priorityQueue.createHeap(nodes.toArray(new Node[0]));
+
+        for(int i = nodeCount; i > 1; --i) {
+            Node activeNode = priorityQueue.getMin();
+
+            if(activeNode == endNode) {
+                //We found the shortest road to the end node.
+                return;
+            }
+
+            int activeNodeDistance = activeNode.predecessor.distance;
+
+            for (Edge e = activeNode.rootEdge; e!= null; e = e.next) {
+                Predecessor neighborNode = e.to.predecessor;
+                int edgeWeight = ((RoadEdge)e).length;
+
+                if(neighborNode.distance > activeNodeDistance + edgeWeight) {
+                    neighborNode.distance = activeNodeDistance + edgeWeight;
+                    neighborNode.predecessor = activeNode;
+                }
+            }
+        }
+    }
+
+    /**
+     * Load a MapGraph by providing a list of intersection nodes and the associated road edges.
+     *
+     * @param intersectionNodes
+     * @param roadEdges
+     * @return Prebuilt MapGraph data-structure.
+     * @throws IOException
+     */
+    public static MapGraph buildFromInputStream(InputStream intersectionNodes, InputStream roadEdges) throws IOException {
         try(
             BufferedReader intersectionNodeBuffer = new BufferedReader(new InputStreamReader(intersectionNodes, StandardCharsets.UTF_8));
             BufferedReader roadEdgeBuffer = new BufferedReader(new InputStreamReader(roadEdges, StandardCharsets.UTF_8))
@@ -88,7 +130,7 @@ class RoadEdge extends Edge {
     }
 }
 
-class Node {
+class Node implements Comparable {
     int nodeNumber;
     Edge rootEdge;
 
@@ -98,6 +140,10 @@ class Node {
         this.nodeNumber = nodeNumber;
     }
 
+    @Override
+    public int compareTo(Object o) {
+        return Integer.compare(this.predecessor.distance, ((Node)o).predecessor.distance);
+    }
 }
 
 class Edge {
