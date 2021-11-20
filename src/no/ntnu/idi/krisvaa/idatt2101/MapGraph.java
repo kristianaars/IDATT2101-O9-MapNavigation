@@ -42,8 +42,8 @@ public class MapGraph {
             //Add roadEdges to Map Graph
             while (roadEdgeBuffer.ready()){
                 roadEdgeBufferST = new StringTokenizer(roadEdgeBuffer.readLine());
-                IntersectionNode fromNode = (IntersectionNode) mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
-                IntersectionNode toNode = (IntersectionNode) mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
+                Node fromNode = mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
+                Node toNode = mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
                 int elapsedTime = Integer.parseInt(roadEdgeBufferST.nextToken());
                 int length = Integer.parseInt(roadEdgeBufferST.nextToken());
                 int speedLimit = Integer.parseInt(roadEdgeBufferST.nextToken());
@@ -67,7 +67,6 @@ public class MapGraph {
 class IntersectionNode extends Node {
     double latitudes;
     double longitudes;
-    RoadEdge rootEdge;
 
     public IntersectionNode(int nodeNumber, double latitudes, double longitudes) {
         super(nodeNumber);
@@ -77,15 +76,15 @@ class IntersectionNode extends Node {
 }
 
 class RoadEdge extends Edge {
-    IntersectionNode to;
-    RoadEdge next;
     int elapsedTime;
     int length;
     int speedLimit;
 
-    public RoadEdge(IntersectionNode to, RoadEdge next, int elapsedTime, int length, int speedLimit) {
-        super(null, next);
-        this.to = to;
+    public RoadEdge(Node to, Edge next, int elapsedTime, int length, int speedLimit) {
+        super(to, next);
+        this.elapsedTime = elapsedTime;
+        this.length = length;
+        this.speedLimit = speedLimit;
     }
 }
 
