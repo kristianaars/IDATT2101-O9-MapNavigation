@@ -5,11 +5,12 @@ package no.ntnu.idi.krisvaa.idatt2101;
  */
 public class PriorityQueue {
 
-    int length;
+    int length = -1;
     Node[] nodes;
 
     public PriorityQueue(int size) {
         nodes = new Node[size];
+        length = 0;
     }
 
     private void fixHeap(int i) {
@@ -17,15 +18,20 @@ public class PriorityQueue {
 
         if(m < length) {
             int h = m + 1;
-            if(h < length && nodes[h].compareTo(nodes[m]) < 0) {
+
+            if(h < length && nodes[h].predecessor.totalWeight < nodes[m].predecessor.totalWeight) {
                 m = h;
             }
 
-            if(nodes[m].compareTo(nodes[h]) < 0) {
+            if(nodes[m].predecessor.totalWeight < nodes[i].predecessor.totalWeight) {
                 swap(i, m);
                 fixHeap(m);
             }
         }
+    }
+
+    public void heapsort() {
+        createHeap(nodes);
     }
 
     public Node getMin() {
@@ -46,8 +52,8 @@ public class PriorityQueue {
     }
 
     public void createHeap(Node[] nodes) {
+        if(this.length == -1) this.length = nodes.length;
         this.nodes = nodes;
-        length = nodes.length;
         int i = length / 2;
         while (i-- > 0) fixHeap(i);
     }
