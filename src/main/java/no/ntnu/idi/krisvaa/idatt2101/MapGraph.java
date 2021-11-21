@@ -1,9 +1,7 @@
 package no.ntnu.idi.krisvaa.idatt2101;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
@@ -16,14 +14,93 @@ public class MapGraph {
     int nodeCount, edgeCount;
     ArrayList<Node> nodes;
 
+    int[] landmarkIDs;
+    int[][] landmarkTable;
+
     /**
      * Initiate using MapGraph.buildFromInputStream()
      */
     private MapGraph() {}
 
+    public void generateLandmarks(int[] landmarkIDs) {
+        this.landmarkIDs = landmarkIDs;
+
+        int[][] distances = new int[landmarkIDs.length][nodeCount];
+        for(int i = 0; i < landmarkIDs.length; i++) {
+            dijkstrasAlgorithm(landmarkIDs[i], -1);
+            System.out.println("Calculating landmark " + landmarkIDs[i]);
+            for(int j = 0; j < nodeCount; j++) {
+                Node n = nodes.get(j);
+                distances[i][j] = n.predecessor.totalWeight;
+            }
+        }
+
+        this.landmarkTable = distances;
+    }
+
+    public void loadLandmarks(InputStream stream) throws IOException {
+        byte[] data = stream.readAllBytes();
+
+        int traversCounter = 0;
+        int landmarkCount = readIntFromByteArray(traversCounter+=4, data);
+
+        landmarkIDs = new int[landmarkCount];
+        landmarkTable = new int[landmarkCount][nodeCount];
+
+        for(int i = 0; i < landmarkCount; i++) {
+            int landmarkID = readIntFromByteArray(traversCounter+=4, data);
+            landmarkIDs[i] = landmarkID;
+
+            for(int j = 0; j < nodeCount; j++) {
+                int weight = readIntFromByteArray(traversCounter+=4, data);
+                landmarkTable[i][j] = weight;
+            }
+        }
+    }
+
+    public void saveLandmarks(OutputStream stream) throws IOException {
+        int fileDataIndex = 0;
+        byte[] fileData = new byte[landmarkIDs.length * (1  + nodeCount) * 4 + 8];
+
+        addIntToByteArray(landmarkIDs.length, fileDataIndex+=4, fileData);
+
+        for(int i = 0; i < landmarkIDs.length; i++) {
+            int landmarkID = landmarkIDs[i];
+
+            addIntToByteArray(landmarkID, fileDataIndex+=4, fileData);
+
+            for(int j = 0; j < nodeCount; j++) {
+                int weight = landmarkTable[i][j];
+                addIntToByteArray(weight, fileDataIndex+=4, fileData);
+            }
+        }
+
+        stream.write(fileData);
+    }
+
+    private void addIntToByteArray(int n, int index, byte[] arr) {
+        arr[index++] = (byte)(n >>> 24);
+        arr[index++] = (byte)(n >>> 16);
+        arr[index++] = (byte)(n >>> 8);
+        arr[index++] = (byte)(n);
+    }
+
+    public int readIntFromByteArray(int index, byte[] bytes) {
+        int r = 0;
+        for(int i = 0; i < bytes.length && i < 4; i++) {
+            r <<= 8;
+            r |= (int)bytes[index + i] & 0xFF;
+        }
+        return r;
+    }
+
     public Node dijkstrasAlgorithm(int startNodeID, int endNodeID) {
         Node startNode = nodes.get(startNodeID);
-        Node endNode = nodes.get(endNodeID);
+        Node endNode = null;
+
+        if(endNodeID > 0) {
+            endNode = nodes.get(endNodeID);
+        }
 
         initPredecessor(startNode);
 
@@ -94,6 +171,7 @@ public class MapGraph {
 
             mapGraph.nodes = new ArrayList<>(mapGraph.nodeCount);
 
+            System.out.println("Loading map-nodes...");
             //Add intersections nodes to Map Graph
             while (intersectionNodeBuffer.ready()){
                 intersectionNodeBufferST = new StringTokenizer(intersectionNodeBuffer.readLine());
@@ -105,6 +183,7 @@ public class MapGraph {
                 mapGraph.nodes.add(index, ISNode);
             }
 
+            System.out.println("Loading map-edges...");
             //Add roadEdges to Map Graph
             while (roadEdgeBuffer.ready()){
                 roadEdgeBufferST = new StringTokenizer(roadEdgeBuffer.readLine());

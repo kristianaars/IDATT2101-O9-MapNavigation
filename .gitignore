@@ -2,4 +2,6 @@
 /out
 /.idea
 /target
+*.txt
+*.bin
 

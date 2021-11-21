@@ -52,7 +52,7 @@ public class MainFrame extends JFrame {
         timeLabel.setSize(120, 25);
         setTimeLabel("");
 
-        ALTAlgorithmButton.addActionListener(new ActionListener() {
+        dijkstrasAlgorithmButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 initiateMapSearch();
@@ -90,6 +90,9 @@ public class MainFrame extends JFrame {
         this.setSize(1000, 600);
         this.setMinimumSize(new Dimension(1050, 600));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+        ALTAlgorithmButton.setEnabled(false);
+        prioritySelector.setEnabled(false);
     }
 
     private void initiateMapSearch() {
@@ -100,9 +103,9 @@ public class MainFrame extends JFrame {
 
     public void plotPoints(Set<GeoPosition> waypoints) { mapPanel.plotPoints(waypoints); }
 
-    public void setTimeLabel(String time) { timeLabel.setText("Time: " + time); }
+    public void setTimeLabel(String time) { timeLabel.setText("Travel Duration: " + time); }
 
-    public void setLengthLabel(String length) { lengthLabel.setText("Length: " + length);}
+    public void setLengthLabel(String length) { lengthLabel.setText("Travel Distance: " + length);}
 }
 
 class MapPanel extends JXMapViewer {
