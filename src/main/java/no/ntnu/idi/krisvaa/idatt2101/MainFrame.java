@@ -11,28 +11,98 @@ import org.jxmapviewer.viewer.*;
 
 import javax.swing.*;
 import javax.swing.event.MouseInputListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.HashSet;
 import java.util.Set;
 
 public class MainFrame extends JFrame {
 
+    private JTextField startNodeTextField;
+    private JTextField endNodeTextField;
+    private JButton ALTAlgorithmButton;
+    private JButton dijkstrasAlgorithmButton;
+    private JComboBox<String> prioritySelector;
+
+    private JLabel lengthLabel;
+    private JLabel timeLabel;
+
     private MapPanel mapPanel;
 
-    public MainFrame() {
+    private MapController mapController;
+
+    public MainFrame(MapController mapController) {
         super();
+
+        this.mapController = mapController;
+
+        startNodeTextField = new JTextField();
+        startNodeTextField.setPreferredSize(new Dimension(60, 25));
+        endNodeTextField = new JTextField();
+        endNodeTextField.setPreferredSize(new Dimension(60, 25));
+        ALTAlgorithmButton = new JButton("ALT-Algorithm");
+        dijkstrasAlgorithmButton = new JButton("Dijkstras Algorithm");
+        prioritySelector = new JComboBox<>(new String[]{"Travel Time", "Road Length"});
+
+        lengthLabel = new JLabel();
+        lengthLabel.setSize(120, 25);
+        setLengthLabel("");
+        timeLabel = new JLabel();
+        timeLabel.setSize(120, 25);
+        setTimeLabel("");
+
+        ALTAlgorithmButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                initiateMapSearch();
+            }
+        });
+
+        JPanel toolbar = new JPanel();
+        toolbar.setLayout(new FlowLayout());
+        toolbar.add(new JLabel("Start node number: "));
+        toolbar.add(startNodeTextField);
+        toolbar.add(new JLabel("End node number: "));
+        toolbar.add(endNodeTextField);
+        toolbar.add(new JLabel("Prioritize: "));
+        toolbar.add(prioritySelector);
+        toolbar.add(new JLabel("Find road using: "));
+        toolbar.add(ALTAlgorithmButton);
+        toolbar.add(dijkstrasAlgorithmButton);
+
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new FlowLayout());
+        infoPanel.add(lengthLabel);
+        infoPanel.add(timeLabel);
+        infoPanel.setPreferredSize(new Dimension(0, 35));
 
         mapPanel = new MapPanel();
 
-        this.getContentPane().add(mapPanel);
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BorderLayout());
 
-        this.setSize(800, 600);
+        mainPanel.add(toolbar, BorderLayout.NORTH);
+        mainPanel.add(infoPanel, BorderLayout.SOUTH);
+        mainPanel.add(mapPanel, BorderLayout.CENTER);
+        this.setContentPane(mainPanel);
+
+        this.setSize(1000, 600);
+        this.setMinimumSize(new Dimension(1050, 600));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
-    public void plotPoints(Set<GeoPosition> waypoints) {
-        mapPanel.plotPoints(waypoints);
+    private void initiateMapSearch() {
+        int startNodeID = Integer.parseInt(startNodeTextField.getText());
+        int endNodeID = Integer.parseInt(endNodeTextField.getText());
+        mapController.plotRoadOnMap(startNodeID, endNodeID, null, null);
     }
 
+    public void plotPoints(Set<GeoPosition> waypoints) { mapPanel.plotPoints(waypoints); }
+
+    public void setTimeLabel(String time) { timeLabel.setText("Time: " + time); }
+
+    public void setLengthLabel(String length) { lengthLabel.setText("Length: " + length);}
 }
 
 class MapPanel extends JXMapViewer {

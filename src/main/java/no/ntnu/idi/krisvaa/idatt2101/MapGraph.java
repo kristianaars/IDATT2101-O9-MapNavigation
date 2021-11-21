@@ -200,3 +200,14 @@ class Predecessor {
     int totalWeight = INFINITY;
     Node predecessor;
 }
+
+
+enum AlgorithmType {
+    Dijkstras { public String toString() {return "Dijkstras Algorithm";}},
+    ALT { public String toString() {return "ALT Algortihm";}}
+}
+
+enum PriorityType {
+    Length { public String toString() {return "Travel distance";}},
+    Time { public String toString() {return "Travel time";}}
+}

@@ -18,22 +18,22 @@ public class MapController {
     private MapGraph mapGraph;
 
     public MapController(String intersectioNodeFile, String roadEdgeFile) throws IOException {
-        mainFrame = new MainFrame();
+        mainFrame = new MainFrame(this);
         mapGraph = MapGraph.buildFromInputStream(new FileInputStream(intersectioNodeFile), new FileInputStream(roadEdgeFile));
 
         mainFrame.setVisible(true);
+    }
 
-        Node endNode = mapGraph.dijkstrasAlgorithm(5434, 5873);
-        System.out.println("End: " + endNode);
+    public void plotRoadOnMap(int startNodeID, int endNodeID, AlgorithmType algType, PriorityType priType) {
+        System.out.println("Seraching for road between " + startNodeID + " and " + endNodeID);
+        Node endNode = mapGraph.dijkstrasAlgorithm(startNodeID, endNodeID);
+
         HashSet<GeoPosition> points = new HashSet<>();
-
         while (endNode.predecessor.predecessor!=null) {
             endNode = endNode.predecessor.predecessor;
             points.add(new GeoPosition(((IntersectionNode)endNode).latitudes, ((IntersectionNode)endNode).longitudes));
         }
-        System.out.println("Start: " + endNode);
-        mainFrame.plotPoints(points);
 
-        System.out.println("Found road...");
+        mainFrame.plotPoints(points);
     }
 }
