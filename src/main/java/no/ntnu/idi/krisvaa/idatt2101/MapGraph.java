@@ -21,30 +21,54 @@ public class MapGraph {
      */
     private MapGraph() {}
 
-    public void dijkstrasAlgorithm(Node startNode, Node endNode) {
+    public Node dijkstrasAlgorithm(int startNodeID, int endNodeID) {
+        Node startNode = nodes.get(startNodeID);
+        Node endNode = nodes.get(endNodeID);
+
+        initPredecessor(startNode);
+
+        int nodeCounter = 0;
+
         PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
-        priorityQueue.createHeap(nodes.toArray(new Node[0]));
+        priorityQueue.insert(startNode);
 
         for(int i = nodeCount; i > 1; --i) {
             Node activeNode = priorityQueue.getMin();
 
             if(activeNode == endNode) {
-                //We found the shortest road to the end node.
-                return;
+                System.out.println("Found shortest path to endnode. While scanning " + nodeCounter + " nodes");
+                return endNode;
             }
 
-            int activeNodeDistance = activeNode.predecessor.distance;
-
             for (Edge e = activeNode.rootEdge; e!= null; e = e.next) {
-                Predecessor neighborNode = e.to.predecessor;
-                int edgeWeight = ((RoadEdge)e).length;
+                IntersectionPredecessor activeNodePred = (IntersectionPredecessor) activeNode.predecessor;
+                IntersectionPredecessor neighborNode = (IntersectionPredecessor) e.to.predecessor;
+                RoadEdge roadEdge = ((RoadEdge)e);
 
-                if(neighborNode.distance > activeNodeDistance + edgeWeight) {
-                    neighborNode.distance = activeNodeDistance + edgeWeight;
+                int edgeWeight = roadEdge.elapsedTime;
+
+                if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
+                    nodeCounter++;
+                    neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
+                    neighborNode.distance = activeNodePred.distance + roadEdge.length;
+                    neighborNode.time = activeNodePred.time + roadEdge.elapsedTime;
                     neighborNode.predecessor = activeNode;
+
+                    priorityQueue.insert(e.to);
                 }
             }
         }
+
+        return endNode;
+    }
+
+    public Node ALTAlgorithm(int startNodeID, int endNodeID) {
+        Node startNode = nodes.get(startNodeID);
+        Node endNode = nodes.get(endNodeID);
+
+        initPredecessor(startNode);
+
+        return null;
     }
 
     /**
@@ -92,16 +116,17 @@ public class MapGraph {
 
                 fromNode.rootEdge = new RoadEdge(toNode, fromNode.rootEdge, elapsedTime, length, speedLimit);
             }
+
+            return mapGraph;
         }
 
-        return null;
     }
 
     private void initPredecessor(Node startNode) {
         for(Node n : nodes) {
-            n.predecessor = new Predecessor();
+            n.predecessor = new IntersectionPredecessor();
         }
-        startNode.predecessor.distance = 0;
+        startNode.predecessor.totalWeight = 0;
     }
 
 }
@@ -115,6 +140,19 @@ class IntersectionNode extends Node {
         this.latitudes = latitudes;
         this.longitudes = longitudes;
     }
+
+    @Override
+    public String toString() {
+        return "IntersectionNode{" +
+                latitudes + "," + longitudes +
+                ", nodeNumber=" + nodeNumber +
+                "} ";
+    }
+}
+
+class IntersectionPredecessor extends Predecessor {
+    int distance = 0;
+    int time = 0;
 }
 
 class RoadEdge extends Edge {
@@ -142,7 +180,7 @@ class Node implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        return Integer.compare(this.predecessor.distance, ((Node)o).predecessor.distance);
+        return Integer.compare(this.predecessor.totalWeight, ((Node)o).predecessor.totalWeight);
     }
 }
 
@@ -157,8 +195,8 @@ class Edge {
 }
 
 class Predecessor {
-    public static final int INFINITY = Integer.MAX_VALUE;
+    public static final int INFINITY = 800000000;
 
-    int distance = INFINITY;
+    int totalWeight = INFINITY;
     Node predecessor;
 }
