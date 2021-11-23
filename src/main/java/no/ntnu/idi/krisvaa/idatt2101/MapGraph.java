@@ -1,7 +1,6 @@
 package no.ntnu.idi.krisvaa.idatt2101;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.StringTokenizer;
@@ -12,10 +11,12 @@ import java.util.StringTokenizer;
 public class MapGraph {
 
     int nodeCount, edgeCount;
-    ArrayList<Node> nodes;
+    //ArrayList<Node> nodes;
+    Node[] nodes;
 
     int[] landmarkIDs;
-    int[][] landmarkTable;
+    int[][][] landmarkTable;
+
 
     /**
      * Initiate using MapGraph.buildFromInputStream()
@@ -24,18 +25,75 @@ public class MapGraph {
 
     public void generateLandmarks(int[] landmarkIDs) {
         this.landmarkIDs = landmarkIDs;
+        int[][][] distances = new int[landmarkIDs.length][nodeCount][2];
 
-        int[][] distances = new int[landmarkIDs.length][nodeCount];
-        for(int i = 0; i < landmarkIDs.length; i++) {
-            dijkstrasAlgorithm(landmarkIDs[i], -1);
-            System.out.println("Calculating landmark " + landmarkIDs[i]);
-            for(int j = 0; j < nodeCount; j++) {
-                Node n = nodes.get(j);
-                distances[i][j] = n.predecessor.totalWeight;
+        for(int k = 0; k < 2; k++) {
+            for(int i = 0; i < landmarkIDs.length; i++) {
+                dijkstrasAlgorithm(landmarkIDs[i], -1, PriorityType.Time);
+                System.out.println("Calculating landmark " + landmarkIDs[i]);
+                for(int j = 0; j < nodeCount; j++) {
+                    Node n = nodes[j];
+                    distances[i][j][k] = n.predecessor.totalWeight;
+                }
             }
+
+            reverseGraph();
         }
 
         this.landmarkTable = distances;
+    }
+
+    private void reverseGraph() {
+        System.out.println("Reversing map graph...");
+
+        Edge[] edgeCopy = new Edge[edgeCount];
+        int edgeCount = 0;
+
+        for(int i = 0; i < nodeCount; i++) {
+            Node n = nodes[i];
+            Edge e = n.rootEdge;
+            n.rootEdge = null;
+
+            while (e != null) {
+                edgeCopy[edgeCount++] = e;
+                e = e.next;
+            }
+        }
+
+        for(Edge e : edgeCopy) {
+            Node to = e.from;
+            Node from = e.to;
+
+            e.next = from.rootEdge;
+            from.rootEdge = e;
+            e.to = to;
+            e.from = from;
+        }
+
+        System.out.println("Reverse completed.");
+    }
+
+    public void saveLandmarks(OutputStream stream) throws IOException {
+        int fileDataIndex = 0;
+        byte[] fileData = new byte[(landmarkIDs.length * (1  + nodeCount) * 4 + 8) * 2];
+
+        addIntToByteArray(landmarkIDs.length, fileDataIndex+=4, fileData);
+
+        for(int i = 0; i < landmarkIDs.length; i++) {
+            int landmarkID = landmarkIDs[i];
+
+            addIntToByteArray(landmarkID, fileDataIndex+=4, fileData);
+
+            for(int k = 0; k < 2; k++) {
+                for(int j = 0; j < nodeCount; j++) {
+                    int weight = landmarkTable[i][j][k];
+                    addIntToByteArray(weight, fileDataIndex+=4, fileData);
+                }
+            }
+
+        }
+
+        stream.write(fileData);
     }
 
     public void loadLandmarks(InputStream stream) throws IOException {
@@ -45,38 +103,23 @@ public class MapGraph {
         int landmarkCount = readIntFromByteArray(traversCounter+=4, data);
 
         landmarkIDs = new int[landmarkCount];
-        landmarkTable = new int[landmarkCount][nodeCount];
+        landmarkTable = new int[landmarkCount][nodeCount][2];
 
         for(int i = 0; i < landmarkCount; i++) {
+
             int landmarkID = readIntFromByteArray(traversCounter+=4, data);
             landmarkIDs[i] = landmarkID;
 
-            for(int j = 0; j < nodeCount; j++) {
-                int weight = readIntFromByteArray(traversCounter+=4, data);
-                landmarkTable[i][j] = weight;
+            for(int k = 0; k < 2; k++) {
+
+                for(int j = 0; j < nodeCount; j++) {
+                    int weight = readIntFromByteArray(traversCounter+=4, data);
+                    landmarkTable[i][j][k] = weight;
+                }
             }
         }
     }
 
-    public void saveLandmarks(OutputStream stream) throws IOException {
-        int fileDataIndex = 0;
-        byte[] fileData = new byte[landmarkIDs.length * (1  + nodeCount) * 4 + 8];
-
-        addIntToByteArray(landmarkIDs.length, fileDataIndex+=4, fileData);
-
-        for(int i = 0; i < landmarkIDs.length; i++) {
-            int landmarkID = landmarkIDs[i];
-
-            addIntToByteArray(landmarkID, fileDataIndex+=4, fileData);
-
-            for(int j = 0; j < nodeCount; j++) {
-                int weight = landmarkTable[i][j];
-                addIntToByteArray(weight, fileDataIndex+=4, fileData);
-            }
-        }
-
-        stream.write(fileData);
-    }
 
     private void addIntToByteArray(int n, int index, byte[] arr) {
         arr[index++] = (byte)(n >>> 24);
@@ -94,14 +137,18 @@ public class MapGraph {
         return r;
     }
 
-    public Node dijkstrasAlgorithm(int startNodeID, int endNodeID) {
-        Node startNode = nodes.get(startNodeID);
+    public Node dijkstrasAlgorithm(int startNodeID, int endNodeID, PriorityType priorityType) {
+        Node startNode = nodes[startNodeID];
         Node endNode = null;
 
         if(endNodeID > 0) {
-            endNode = nodes.get(endNodeID);
+            endNode = nodes[endNodeID];
         }
 
+        return dijkstrasAlgorithm(startNode, endNode, priorityType);
+    }
+
+    private Node dijkstrasAlgorithm(Node startNode, Node endNode, PriorityType priorityType) {
         initPredecessor(startNode);
 
         int nodeCounter = 0;
@@ -109,7 +156,7 @@ public class MapGraph {
         PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
         priorityQueue.insert(startNode);
 
-        for(int i = nodeCount; i > 1; --i) {
+        while (priorityQueue.length > 0) {
             Node activeNode = priorityQueue.getMin();
 
             if(activeNode == endNode) {
@@ -122,7 +169,12 @@ public class MapGraph {
                 IntersectionPredecessor neighborNode = (IntersectionPredecessor) e.to.predecessor;
                 RoadEdge roadEdge = ((RoadEdge)e);
 
-                int edgeWeight = roadEdge.elapsedTime;
+                int edgeWeight = 0;
+
+                switch (priorityType) {
+                    case Time ->  edgeWeight = roadEdge.elapsedTime;
+                    case Length ->  edgeWeight = roadEdge.length;
+                }
 
                 if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
                     nodeCounter++;
@@ -139,13 +191,68 @@ public class MapGraph {
         return endNode;
     }
 
-    public Node ALTAlgorithm(int startNodeID, int endNodeID) {
-        Node startNode = nodes.get(startNodeID);
-        Node endNode = nodes.get(endNodeID);
+    public Node ALTAlgorithm(int startNodeID, int endNodeID, PriorityType priorityType) {
+        Node startNode = nodes[startNodeID];
+        Node endNode = nodes[endNodeID];
 
         initPredecessor(startNode);
 
-        return null;
+        int nodeCounter = 0;
+
+        PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
+        priorityQueue.insert(startNode);
+
+        while (priorityQueue.length > 0) {
+            Node activeNode = priorityQueue.getMin();
+
+            if(activeNode == endNode) {
+                System.out.println("Found shortest path to endnode. While scanning " + nodeCounter + " nodes");
+                return endNode;
+            }
+
+            for (Edge e = activeNode.rootEdge; e!= null; e = e.next) {
+                IntersectionPredecessor activeNodePred = (IntersectionPredecessor) activeNode.predecessor;
+                IntersectionPredecessor neighborNode = (IntersectionPredecessor) e.to.predecessor;
+                RoadEdge roadEdge = ((RoadEdge)e);
+
+                int edgeWeight = 0;
+
+                switch (priorityType) {
+                    case Time ->  edgeWeight = roadEdge.elapsedTime;
+                    case Length ->  edgeWeight = roadEdge.length;
+                }
+
+                if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
+                    nodeCounter++;
+                    neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
+                    neighborNode.distance = activeNodePred.distance + roadEdge.length;
+                    neighborNode.time = activeNodePred.time + roadEdge.elapsedTime;
+                    neighborNode.predecessor = activeNode;
+
+                    int highestDiff = 0;
+
+                    for(int l = 0; l < landmarkIDs.length; l++) {
+                        int landmarkToTarget = landmarkTable[l][endNodeID][0];
+                        int landmarkToNode = landmarkTable[l][activeNode.nodeNumber][0];
+                        int diff1 = landmarkToTarget - landmarkToNode;
+                        if(diff1 < 0) { diff1 = 0; }
+
+                        int targetToLandmark = landmarkTable[l][endNodeID][1];
+                        int nodeToLandmark = landmarkTable[l][activeNode.nodeNumber][1];
+                        int diff2 = nodeToLandmark - targetToLandmark;
+                        if(diff1 < 0) { diff1 = 0; }
+
+                        if(diff1 > diff2) { highestDiff = diff1; }
+                        else { highestDiff = diff2; }
+                    }
+
+                    neighborNode.distanceToTarget = highestDiff;
+                    priorityQueue.insert(e.to);
+                }
+            }
+        }
+
+        return endNode;
     }
 
     /**
@@ -169,31 +276,31 @@ public class MapGraph {
             StringTokenizer roadEdgeBufferST = new StringTokenizer(roadEdgeBuffer.readLine());
             mapGraph.edgeCount = Integer.parseInt(roadEdgeBufferST.nextToken());
 
-            mapGraph.nodes = new ArrayList<>(mapGraph.nodeCount);
+            mapGraph.nodes = new Node[mapGraph.nodeCount];
 
             System.out.println("Loading map-nodes...");
             //Add intersections nodes to Map Graph
             while (intersectionNodeBuffer.ready()){
-                intersectionNodeBufferST = new StringTokenizer(intersectionNodeBuffer.readLine());
-                int index = Integer.parseInt(intersectionNodeBufferST.nextToken());
-                double latitudes = Double.parseDouble(intersectionNodeBufferST.nextToken());
-                double longitudes = Double.parseDouble(intersectionNodeBufferST.nextToken());
+                String[] lineValues = intersectionNodeBuffer.readLine().replace("  ", " ").split(" ");
+                int index = Integer.parseInt(lineValues[0]);
+                double latitudes = Double.parseDouble(lineValues[1]);
+                double longitudes = Double.parseDouble(lineValues[2]);
 
                 IntersectionNode ISNode = new IntersectionNode(index, latitudes, longitudes);
-                mapGraph.nodes.add(index, ISNode);
+                mapGraph.nodes[index] = ISNode;
             }
 
             System.out.println("Loading map-edges...");
             //Add roadEdges to Map Graph
             while (roadEdgeBuffer.ready()){
-                roadEdgeBufferST = new StringTokenizer(roadEdgeBuffer.readLine());
-                Node fromNode = mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
-                Node toNode = mapGraph.nodes.get(Integer.parseInt(roadEdgeBufferST.nextToken()));
-                int elapsedTime = Integer.parseInt(roadEdgeBufferST.nextToken());
-                int length = Integer.parseInt(roadEdgeBufferST.nextToken());
-                int speedLimit = Integer.parseInt(roadEdgeBufferST.nextToken());
+                String[] lineValues = roadEdgeBuffer.readLine().split("\t");
+                Node fromNode = mapGraph.nodes[Integer.parseInt(lineValues[0])];
+                Node toNode = mapGraph.nodes[Integer.parseInt(lineValues[1])];
+                int elapsedTime = Integer.parseInt(lineValues[2]);
+                int length = Integer.parseInt(lineValues[3]);
+                int speedLimit = Integer.parseInt(lineValues[4]);
 
-                fromNode.rootEdge = new RoadEdge(toNode, fromNode.rootEdge, elapsedTime, length, speedLimit);
+                fromNode.rootEdge = new RoadEdge(toNode, fromNode, fromNode.rootEdge, elapsedTime, length, speedLimit);
             }
 
             return mapGraph;
@@ -239,8 +346,8 @@ class RoadEdge extends Edge {
     int length;
     int speedLimit;
 
-    public RoadEdge(Node to, Edge next, int elapsedTime, int length, int speedLimit) {
-        super(to, next);
+    public RoadEdge(Node to, Node from, Edge next, int elapsedTime, int length, int speedLimit) {
+        super(to,from, next);
         this.elapsedTime = elapsedTime;
         this.length = length;
         this.speedLimit = speedLimit;
@@ -259,16 +366,18 @@ class Node implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        return Integer.compare(this.predecessor.totalWeight, ((Node)o).predecessor.totalWeight);
+        return Integer.compare(this.predecessor.totalWeight + this.predecessor.distanceToTarget, ((Node)o).predecessor.totalWeight + ((Node)o).predecessor.distanceToTarget);
     }
 }
 
 class Edge {
     Edge next;
     Node to;
+    Node from;
 
-    public Edge(Node to, Edge next) {
+    public Edge(Node to, Node from, Edge next) {
         this.to = to;
+        this.from = from;
         this.next = next;
     }
 }
@@ -277,6 +386,7 @@ class Predecessor {
     public static final int INFINITY = 800000000;
 
     int totalWeight = INFINITY;
+    int distanceToTarget = 0;
     Node predecessor;
 }
 
