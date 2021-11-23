@@ -28,8 +28,14 @@ public class MainFrame extends JFrame {
     private JButton dijkstrasAlgorithmButton;
     private JComboBox<PriorityType> prioritySelector;
 
-    private JLabel lengthLabel;
-    private JLabel timeLabel;
+    private JTextField lengthTextField;
+    private JTextField timeTextField;
+    private JTextField startPosition;
+    private JTextField endPosition;
+    private JTextField priorityType;
+    private JTextField numberOfNodes;
+    private JTextField algorithmType;
+    private JTextField algorithmExecutionTime;
 
     private MapPanel mapPanel;
 
@@ -41,19 +47,53 @@ public class MainFrame extends JFrame {
         this.mapController = mapController;
 
         startNodeTextField = new JTextField();
-        startNodeTextField.setPreferredSize(new Dimension(60, 25));
+        startNodeTextField.setPreferredSize(new Dimension(85, 25));
         endNodeTextField = new JTextField();
-        endNodeTextField.setPreferredSize(new Dimension(60, 25));
+        endNodeTextField.setPreferredSize(new Dimension(85, 25));
         ALTAlgorithmButton = new JButton("ALT-Algorithm");
         dijkstrasAlgorithmButton = new JButton("Dijkstras Algorithm");
         prioritySelector = new JComboBox<PriorityType>(PriorityType.values());
 
-        lengthLabel = new JLabel();
-        lengthLabel.setSize(120, 25);
-        setLengthLabel("");
-        timeLabel = new JLabel();
-        timeLabel.setSize(120, 25);
-        setTimeLabel("");
+        lengthTextField = new JTextField();
+        timeTextField = new JTextField();
+        startPosition = new JTextField();
+        endPosition = new JTextField();
+        priorityType = new JTextField();
+        numberOfNodes = new JTextField();
+        algorithmType = new JTextField();
+        algorithmExecutionTime = new JTextField();
+
+        lengthTextField.setMaximumSize(new Dimension(10000, 30));
+        lengthTextField.setEditable(false);
+        lengthTextField.setBackground(this.getBackground());
+
+        timeTextField.setMaximumSize(new Dimension(10000, 30));
+        timeTextField.setEditable(false);
+        timeTextField.setBackground(this.getBackground());
+
+        startPosition.setMaximumSize(new Dimension(10000, 30));
+        startPosition.setEditable(false);
+        startPosition.setBackground(this.getBackground());
+
+        endPosition.setMaximumSize(new Dimension(10000, 30));
+        endPosition.setEditable(false);
+        endPosition.setBackground(this.getBackground());
+
+        priorityType.setMaximumSize(new Dimension(10000, 30));
+        algorithmType.setEditable(false);
+        priorityType.setBackground(this.getBackground());
+
+        numberOfNodes.setMaximumSize(new Dimension(10000, 30));
+        numberOfNodes.setEditable(false);
+        numberOfNodes.setBackground(this.getBackground());
+
+        algorithmType.setMaximumSize(new Dimension(10000, 30));
+        algorithmType.setEditable(false);
+        algorithmType.setBackground(this.getBackground());
+
+        algorithmExecutionTime.setMaximumSize(new Dimension(10000, 30));
+        algorithmExecutionTime.setEditable(false);
+        algorithmExecutionTime.setBackground(this.getBackground());
 
         dijkstrasAlgorithmButton.addActionListener(e -> {
             initiateMapSearch(AlgorithmType.Dijkstras);
@@ -64,11 +104,14 @@ public class MainFrame extends JFrame {
         });
 
         prioritySelector.addActionListener(e -> {
-            if(prioritySelector.getSelectedItem() == PriorityType.Length) {
-                ALTAlgorithmButton.setEnabled(false);
-            } else {
-                ALTAlgorithmButton.setEnabled(true);
+            PriorityType priType = (PriorityType) prioritySelector.getSelectedItem();
+
+            switch (priType) {
+                case GasStations, CharningStations -> {ALTAlgorithmButton.setEnabled(false); endNodeTextField.setEnabled(false); endNodeTextField.setBackground(this.getBackground());}
+                case Length -> {ALTAlgorithmButton.setEnabled(false); endNodeTextField.setEnabled(true); endNodeTextField.setBackground(Color.WHITE);}
+                case Time -> {ALTAlgorithmButton.setEnabled(true); endNodeTextField.setEnabled(true); endNodeTextField.setBackground(Color.WHITE);}
             }
+
         });
 
         prioritySelector.setSelectedItem(PriorityType.Time);
@@ -85,19 +128,75 @@ public class MainFrame extends JFrame {
         toolbar.add(ALTAlgorithmButton);
         toolbar.add(dijkstrasAlgorithmButton);
 
+        JLabel infoPanelHeader = new JLabel("Route information");
+        infoPanelHeader.setFont(new Font("Serif", Font.BOLD, 18));
+
+        JLabel startPositionLabel = new JLabel("Start-position");
+        startPositionLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        startPositionLabel.setSize(120, 25);
+
+        JLabel endPositionLabel = new JLabel("End-position");
+        endPositionLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        endPositionLabel.setSize(120, 25);
+
+        JLabel lengthLabel = new JLabel("Length");
+        lengthLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        lengthLabel.setSize(120, 25);
+
+        JLabel timeLabel = new JLabel("Duration");
+        timeLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        timeLabel.setSize(120, 25);
+
+        JLabel algorithmInfoHeader = new JLabel("Algorithm information:");
+        algorithmInfoHeader.setFont(new Font("Serif", Font.BOLD, 18));
+
+        JLabel algorithmTypeLabel = new JLabel("Algorithm-type");
+        algorithmTypeLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        algorithmTypeLabel.setSize(120, 25);
+
+        JLabel numberOfNodesLabel = new JLabel("Visited nodes");
+        numberOfNodesLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        numberOfNodesLabel.setSize(120, 25);
+
+        JLabel algorithmExecutionTimeLabel = new JLabel("Execuition time");
+        algorithmExecutionTimeLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        algorithmExecutionTimeLabel.setSize(120, 25);
+
+        JLabel priorityTypeLabel = new JLabel("Priority type");
+        priorityTypeLabel.setFont(new Font("Serif", Font.BOLD, 14));
+        priorityTypeLabel.setSize(120, 25);
+
         JPanel infoPanel = new JPanel();
-        infoPanel.setLayout(new FlowLayout());
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.PAGE_AXIS));
+        infoPanel.add(infoPanelHeader);
+        infoPanel.add(startPositionLabel);
+        infoPanel.add(startPosition);
+        infoPanel.add(endPositionLabel);
+        infoPanel.add(endPosition);
         infoPanel.add(lengthLabel);
+        infoPanel.add(lengthTextField);
         infoPanel.add(timeLabel);
-        infoPanel.setPreferredSize(new Dimension(0, 35));
+        infoPanel.add(timeTextField);
+
+        infoPanel.add(algorithmInfoHeader);
+        infoPanel.add(algorithmTypeLabel);
+        infoPanel.add(algorithmType);
+        infoPanel.add(numberOfNodesLabel);
+        infoPanel.add(numberOfNodes);
+        infoPanel.add(algorithmExecutionTimeLabel);
+        infoPanel.add(algorithmExecutionTime);
+        infoPanel.add(priorityTypeLabel);
+        infoPanel.add(priorityType);
+
+        infoPanel.setPreferredSize(new Dimension(250, 0));
 
         mapPanel = new MapPanel();
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
 
-        mainPanel.add(toolbar, BorderLayout.NORTH);
-        mainPanel.add(infoPanel, BorderLayout.SOUTH);
+        mainPanel.add(toolbar, BorderLayout.PAGE_START);
+        mainPanel.add(infoPanel, BorderLayout.LINE_START);
         mainPanel.add(mapPanel, BorderLayout.CENTER);
         this.setContentPane(mainPanel);
 
@@ -115,9 +214,19 @@ public class MainFrame extends JFrame {
 
     public void plotPoints(Set<GeoPosition> waypoints) { mapPanel.plotPoints(waypoints); }
 
-    public void setTimeLabel(String time) { timeLabel.setText("Travel Duration: " + time); }
+    public void setRouteStats(String startPosition, String endPosition, String length, String duration) {
+        this.startPosition.setText(startPosition);
+        this.endPosition.setText(endPosition);
+        this.lengthTextField.setText(length);
+        this.timeTextField.setText(duration);
+    }
 
-    public void setLengthLabel(String length) { lengthLabel.setText("Travel Distance: " + length);}
+    public void setAlgorithmStats(String algorithmType, String visitedNodes, String executionTime, String priorityType) {
+        this.algorithmType.setText(algorithmType);
+        this.numberOfNodes.setText(visitedNodes);
+        this.algorithmExecutionTime.setText(executionTime);
+        this.priorityType.setText(priorityType);
+    }
 }
 
 class MapPanel extends JXMapViewer {

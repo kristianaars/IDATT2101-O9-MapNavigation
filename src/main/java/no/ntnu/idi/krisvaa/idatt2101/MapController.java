@@ -21,7 +21,7 @@ public class MapController {
                 "island_noder.txt",
                 "island_kanter.txt",
                 "island_landemerker.lm",
-                "interessepkt.txt",
+                "island_interessepkt.txt",
                 new int[]{6, 55, 20030, 34}
         );
 
@@ -32,7 +32,7 @@ public class MapController {
 
     public MapController(String intersectioNodeFile, String roadEdgeFile, String landmarkFile, String pointsOfInterestFile, int[] landmarkNodes) throws IOException {
         System.out.println("Loading map-data...");
-        mapGraph = MapGraph.buildFromInputStream(new FileInputStream(intersectioNodeFile), new FileInputStream(roadEdgeFile));
+        mapGraph = MapGraph.buildFromInputStream(new FileInputStream(intersectioNodeFile), new FileInputStream(roadEdgeFile), new FileInputStream(pointsOfInterestFile));
 
         System.out.println("Loading landmarks...");
         loadLandmarks(mapGraph, landmarkNodes, landmarkFile);
@@ -104,30 +104,55 @@ public class MapController {
     public void plotRoadOnMap(int startNodeID, int endNodeID, AlgorithmType algType, PriorityType priType) {
         System.out.println("Seraching for road between " + startNodeID + " and " + endNodeID + " using " + algType);
 
+        long startTime = System.currentTimeMillis();
         Node endNode = null;
         switch (algType) {
             case ALT ->  endNode = mapGraph.ALTAlgorithm(startNodeID, endNodeID, priType);
-            case Dijkstras -> endNode = mapGraph.dijkstrasAlgorithm(startNodeID, endNodeID, priType);
+            default -> endNode = mapGraph.dijkstrasAlgorithm(startNodeID, endNodeID, priType);
         }
+        long elapsedExecutionTime = System.currentTimeMillis() - startTime;
 
-        int distance = ((IntersectionPredecessor)endNode.predecessor).distance;
-        int time = ((IntersectionPredecessor)endNode.predecessor).time / 100;
         System.out.println("Found road from " + mapGraph.nodes[startNodeID] + " to " + endNode);
 
+        String distance = "N/A";
+        String travelDuration = "N/A";
+        String endPosition = "N/A";
+        String startPosition = "N/A";
+
         HashSet<GeoPosition> points = new HashSet<>();
-        while (endNode.predecessor.predecessor!=null) {
-            endNode = endNode.predecessor.predecessor;
-            points.add(new GeoPosition(((IntersectionNode)endNode).latitudes, ((IntersectionNode)endNode).longitudes));
+        if(endNode==null) {
+            for(Node n : mapGraph.lastSpecialSearchResult) {
+                points.add(new GeoPosition(((IntersectionNode)n).latitudes, ((IntersectionNode)n).longitudes));
+            }
+        } else {
+            distance = String.format("%.2f km", ((IntersectionPredecessor)endNode.predecessor).distance / 1000f);
+            travelDuration = secondsToTime(((IntersectionPredecessor)endNode.predecessor).time / 100);
+            endPosition = ((IntersectionNode)endNode).latitudes + ", " + ((IntersectionNode)endNode).longitudes;
+
+            while (endNode.predecessor.predecessor!=null) {
+                endNode = endNode.predecessor.predecessor;
+                points.add(new GeoPosition(((IntersectionNode)endNode).latitudes, ((IntersectionNode)endNode).longitudes));
+            }
+
+            startPosition = ((IntersectionNode)endNode).latitudes + ", " + ((IntersectionNode)endNode).longitudes;
         }
 
+        String algorithmType = algType.toString();
+        String priorityType = priType.toString();
+        String nodeCount = mapGraph.lastNodeCount + " nodes visited";
+        String executionTime = String.format("%d ms", elapsedExecutionTime);
+
+        mainFrame.setRouteStats(startPosition, endPosition, distance, travelDuration);
+        mainFrame.setAlgorithmStats(algorithmType, nodeCount, executionTime, priorityType);
         mainFrame.plotPoints(points);
-        mainFrame.setLengthLabel(distance/1000f + " km");
-        int hours = time / 3600;
-        int minutes = (time % 3600) / 60;
-        int seconds = time%60;
+        //plotLatestActivity();
+    }
 
-        plotLatestActivity();
+    public static String secondsToTime(int seconds) {
+        int hours = seconds / 3600;
+        int minutes = (seconds % 3600) / 60;
+        int sec = seconds%60;
 
-        mainFrame.setTimeLabel(String.format("%d:%02d:%02d", hours, minutes, seconds));
+        return String.format("%d:%02d:%02d", hours, minutes, sec);
     }
 }

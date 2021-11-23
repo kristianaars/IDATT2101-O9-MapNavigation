@@ -2,7 +2,6 @@ package no.ntnu.idi.krisvaa.idatt2101;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 /***
@@ -15,6 +14,8 @@ public class MapGraph {
     //ArrayList<Node> nodes;
     Node[] nodes;
     boolean[] lastSearch;
+    int lastNodeCount;
+    Node[] lastSpecialSearchResult;
 
     int[] landmarkIDs;
     int[][][] landmarkTable;
@@ -154,8 +155,15 @@ public class MapGraph {
         initPredecessor(startNode);
 
         lastSearch = new boolean[nodeCount];
+        lastNodeCount = 0;
 
-        int nodeCounter = 0;
+        IntersectionNodeType targetType = IntersectionNodeType.None;
+        int typeCount = 0;
+        final int targetTypeCount = 10;
+        switch (priorityType) {
+            case GasStations -> { targetType = IntersectionNodeType.GasStation; lastSpecialSearchResult = new Node[targetTypeCount]; }
+            case CharningStations -> {targetType = IntersectionNodeType.ChargingStation; lastSpecialSearchResult = new Node[targetTypeCount]; }
+        }
 
         PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
         priorityQueue.insert(startNode);
@@ -163,9 +171,18 @@ public class MapGraph {
         while (priorityQueue.length > 0) {
             Node activeNode = priorityQueue.getMin();
 
-            if(activeNode == endNode) {
-                System.out.println("Found shortest path to endnode. While scanning " + nodeCounter + " nodes");
+            if(activeNode == endNode && targetType == IntersectionNodeType.None) {
+                System.out.println("Found shortest path to endnode. While scanning " + lastNodeCount + " nodes");
                 return endNode;
+            } else if(targetType == IntersectionNodeType.GasStation && ((IntersectionNode)activeNode).type == IntersectionNodeType.GasStation) {
+                lastSpecialSearchResult[typeCount++] = activeNode;
+            } else if(targetType == IntersectionNodeType.ChargingStation && ((IntersectionNode)activeNode).type == IntersectionNodeType.ChargingStation) {
+                lastSpecialSearchResult[typeCount++] = activeNode;
+            }
+
+            if(typeCount > targetTypeCount-1) {
+                System.out.println("Found " + priorityType + ". While scanning " + lastNodeCount + " nodes");
+                return null;
             }
 
             for (Edge e = activeNode.rootEdge; e!= null; e = e.next) {
@@ -176,12 +193,12 @@ public class MapGraph {
                 int edgeWeight = 0;
 
                 switch (priorityType) {
-                    case Time ->  edgeWeight = roadEdge.elapsedTime;
                     case Length ->  edgeWeight = roadEdge.length;
+                    default -> edgeWeight = roadEdge.elapsedTime;
                 }
 
                 if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
-                    nodeCounter++;
+                    lastNodeCount++;
                     lastSearch[activeNode.nodeNumber] = true;
 
                     neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
@@ -203,8 +220,7 @@ public class MapGraph {
 
         initPredecessor(startNode);
         lastSearch = new boolean[nodeCount];
-
-        int nodeCounter = 0;
+        lastNodeCount = 0;
 
         PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
         priorityQueue.insert(startNode);
@@ -213,7 +229,7 @@ public class MapGraph {
             Node activeNode = priorityQueue.getMin();
 
             if(activeNode == endNode) {
-                System.out.println("Found shortest path to endnode. While scanning " + nodeCounter + " nodes");
+                System.out.println("Found shortest path to endnode. While scanning " + lastNodeCount + " nodes");
                 return endNode;
             }
 
@@ -230,7 +246,7 @@ public class MapGraph {
                 }
 
                 if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
-                    nodeCounter++;
+                    lastNodeCount++;
                     lastSearch[activeNode.nodeNumber] = true;
 
                     neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
@@ -257,12 +273,13 @@ public class MapGraph {
                         }
                     }
 
-                    neighborNode.distanceToTarget = (int) ((highestDiff/((highestSpeedLimit*1000)/3600f))*100);
+                    neighborNode.distanceToTarget = (int) ((highestDiff/(((float)highestSpeedLimit*1000f)/3600f))*100f);
                     priorityQueue.insert(e.to);
                 }
             }
         }
 
+        System.out.println("Scanned " + lastNodeCount + " nodes. Unable to find path....");
         return endNode;
     }
 
@@ -274,10 +291,11 @@ public class MapGraph {
      * @return Prebuilt MapGraph data-structure.
      * @throws IOException
      */
-    public static MapGraph buildFromInputStream(InputStream intersectionNodes, InputStream roadEdges) throws IOException {
+    public static MapGraph buildFromInputStream(InputStream intersectionNodes, InputStream roadEdges, InputStream nodeTypes) throws IOException {
         try(
             BufferedReader intersectionNodeBuffer = new BufferedReader(new InputStreamReader(intersectionNodes, StandardCharsets.UTF_8));
-            BufferedReader roadEdgeBuffer = new BufferedReader(new InputStreamReader(roadEdges, StandardCharsets.UTF_8))
+            BufferedReader roadEdgeBuffer = new BufferedReader(new InputStreamReader(roadEdges, StandardCharsets.UTF_8));
+            BufferedReader nodeTypeBuffer = new BufferedReader(new InputStreamReader(nodeTypes, StandardCharsets.UTF_8));
         ) {
             MapGraph mapGraph = new MapGraph();
 
@@ -286,6 +304,9 @@ public class MapGraph {
 
             StringTokenizer roadEdgeBufferST = new StringTokenizer(roadEdgeBuffer.readLine());
             mapGraph.edgeCount = Integer.parseInt(roadEdgeBufferST.nextToken());
+
+            StringTokenizer nodeTypeBufferST = new StringTokenizer(nodeTypeBuffer.readLine());
+            int nodeTypeCount =  Integer.parseInt(nodeTypeBufferST.nextToken());
 
             mapGraph.nodes = new Node[mapGraph.nodeCount];
 
@@ -316,6 +337,21 @@ public class MapGraph {
                 fromNode.rootEdge = new RoadEdge(toNode, fromNode, fromNode.rootEdge, elapsedTime, length, speedLimit);
             }
 
+            System.out.println("Loading node types...");
+            while (nodeTypeBuffer.ready()){
+                String[] lineValues = nodeTypeBuffer.readLine().split("\t");
+                IntersectionNode node = (IntersectionNode) mapGraph.nodes[Integer.parseInt(lineValues[0])];
+                int nodeType = Integer.parseInt(lineValues[1]);
+                String name = lineValues[2];
+
+                switch (nodeType) {
+                    case 2: node.type = IntersectionNodeType.GasStation; break;
+                    case 4: node.type = IntersectionNodeType.ChargingStation; break;
+                    default: node.type = IntersectionNodeType.Normal;
+                }
+            }
+
+
             return mapGraph;
         }
 
@@ -333,11 +369,13 @@ public class MapGraph {
 class IntersectionNode extends Node {
     double latitudes;
     double longitudes;
+    IntersectionNodeType type;
 
     public IntersectionNode(int nodeNumber, double latitudes, double longitudes) {
         super(nodeNumber);
         this.latitudes = latitudes;
         this.longitudes = longitudes;
+        type = IntersectionNodeType.Normal;
     }
 
     @Override
@@ -404,6 +442,9 @@ class Predecessor {
     int distance = 0;
 }
 
+enum IntersectionNodeType {
+    None, Normal, GasStation, ChargingStation;
+}
 
 enum AlgorithmType {
     Dijkstras { public String toString() {return "Dijkstras Algorithm";}},
@@ -412,5 +453,7 @@ enum AlgorithmType {
 
 enum PriorityType {
     Length { public String toString() {return "Travel distance";}},
-    Time { public String toString() {return "Travel time";}}
+    Time { public String toString() {return "Travel time";}},
+    GasStations { public String toString() {return "10 Closest Gas Stations";}},
+    CharningStations { public String toString() {return "10 Closest Charging Stations";}}
 }
