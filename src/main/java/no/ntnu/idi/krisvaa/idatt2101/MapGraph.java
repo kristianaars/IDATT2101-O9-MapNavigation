@@ -10,9 +10,11 @@ import java.util.StringTokenizer;
  */
 public class MapGraph {
 
+    int highestSpeedLimit = 0;
     int nodeCount, edgeCount;
     //ArrayList<Node> nodes;
     Node[] nodes;
+    boolean[] lastSearch;
 
     int[] landmarkIDs;
     int[][][] landmarkTable;
@@ -33,7 +35,7 @@ public class MapGraph {
                 System.out.println("Calculating landmark " + landmarkIDs[i]);
                 for(int j = 0; j < nodeCount; j++) {
                     Node n = nodes[j];
-                    distances[i][j][k] = n.predecessor.totalWeight;
+                    distances[i][j][k] = ((IntersectionPredecessor)n.predecessor).distance;
                 }
             }
 
@@ -151,6 +153,8 @@ public class MapGraph {
     private Node dijkstrasAlgorithm(Node startNode, Node endNode, PriorityType priorityType) {
         initPredecessor(startNode);
 
+        lastSearch = new boolean[nodeCount];
+
         int nodeCounter = 0;
 
         PriorityQueue priorityQueue = new PriorityQueue(nodeCount);
@@ -178,6 +182,8 @@ public class MapGraph {
 
                 if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
                     nodeCounter++;
+                    lastSearch[activeNode.nodeNumber] = true;
+
                     neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
                     neighborNode.distance = activeNodePred.distance + roadEdge.length;
                     neighborNode.time = activeNodePred.time + roadEdge.elapsedTime;
@@ -196,6 +202,7 @@ public class MapGraph {
         Node endNode = nodes[endNodeID];
 
         initPredecessor(startNode);
+        lastSearch = new boolean[nodeCount];
 
         int nodeCounter = 0;
 
@@ -224,6 +231,8 @@ public class MapGraph {
 
                 if(neighborNode.totalWeight > activeNodePred.totalWeight + edgeWeight) {
                     nodeCounter++;
+                    lastSearch[activeNode.nodeNumber] = true;
+
                     neighborNode.totalWeight = activeNodePred.totalWeight + edgeWeight;
                     neighborNode.distance = activeNodePred.distance + roadEdge.length;
                     neighborNode.time = activeNodePred.time + roadEdge.elapsedTime;
@@ -232,6 +241,7 @@ public class MapGraph {
                     int highestDiff = 0;
 
                     for(int l = 0; l < landmarkIDs.length; l++) {
+
                         int landmarkToTarget = landmarkTable[l][endNodeID][0];
                         int landmarkToNode = landmarkTable[l][activeNode.nodeNumber][0];
                         int diff1 = landmarkToTarget - landmarkToNode;
@@ -240,13 +250,14 @@ public class MapGraph {
                         int targetToLandmark = landmarkTable[l][endNodeID][1];
                         int nodeToLandmark = landmarkTable[l][activeNode.nodeNumber][1];
                         int diff2 = nodeToLandmark - targetToLandmark;
-                        if(diff1 < 0) { diff1 = 0; }
 
-                        if(diff1 > diff2) { highestDiff = diff1; }
-                        else { highestDiff = diff2; }
+                        if(diff1 > highestDiff || diff2 > highestDiff) {
+                            if(diff1 > diff2) { highestDiff = diff1; }
+                            else { highestDiff = diff2; }
+                        }
                     }
 
-                    neighborNode.distanceToTarget = highestDiff;
+                    neighborNode.distanceToTarget = (int) ((highestDiff/((highestSpeedLimit*1000)/3600f))*100);
                     priorityQueue.insert(e.to);
                 }
             }
@@ -300,6 +311,8 @@ public class MapGraph {
                 int length = Integer.parseInt(lineValues[3]);
                 int speedLimit = Integer.parseInt(lineValues[4]);
 
+                if(speedLimit > mapGraph.highestSpeedLimit) mapGraph.highestSpeedLimit = speedLimit;
+
                 fromNode.rootEdge = new RoadEdge(toNode, fromNode, fromNode.rootEdge, elapsedTime, length, speedLimit);
             }
 
@@ -337,7 +350,6 @@ class IntersectionNode extends Node {
 }
 
 class IntersectionPredecessor extends Predecessor {
-    int distance = 0;
     int time = 0;
 }
 
@@ -366,7 +378,8 @@ class Node implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        return Integer.compare(this.predecessor.totalWeight + this.predecessor.distanceToTarget, ((Node)o).predecessor.totalWeight + ((Node)o).predecessor.distanceToTarget);
+        if(predecessor.distanceToTarget!=0) return Integer.compare(this.predecessor.totalWeight + this.predecessor.distanceToTarget, ((Node)o).predecessor.totalWeight + ((Node)o).predecessor.distanceToTarget);
+        return Integer.compare(this.predecessor.totalWeight, ((Node)o).predecessor.totalWeight);
     }
 }
 
@@ -383,11 +396,12 @@ class Edge {
 }
 
 class Predecessor {
-    public static final int INFINITY = 800000000;
+    public static final int INFINITY = 1000000000;
 
     int totalWeight = INFINITY;
     int distanceToTarget = 0;
     Node predecessor;
+    int distance = 0;
 }
 
 

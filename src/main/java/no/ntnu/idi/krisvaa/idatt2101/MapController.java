@@ -9,21 +9,21 @@ import java.util.HashSet;
 public class MapController {
 
     public static void main(String[] args) throws IOException {
-        MapController mc = new MapController(
+        /*MapController mc = new MapController(
                 "norden_noder.txt",
                 "norden_kanter.txt",
                 "norden_landemerker.lm",
-                "interessepkt.txt",
+                "norden_interessepkt.txt",
                 new int[]{2151398, 2724481, 251295, 1045921, 3209493, 6579443, 5492224}
-        );
+        );*/
 
-        /*MapController mc = new MapController(
+        MapController mc = new MapController(
                 "island_noder.txt",
                 "island_kanter.txt",
                 "island_landemerker.lm",
                 "interessepkt.txt",
                 new int[]{6, 55, 20030, 34}
-        );*/
+        );
 
     }
 
@@ -87,6 +87,20 @@ public class MapController {
         mainFrame.plotPoints(points);
     }
 
+    public void plotLatestActivity() {
+        boolean[] activity = mapGraph.lastSearch;
+        HashSet<GeoPosition> set = new HashSet<GeoPosition>();
+
+        for(int i = 0; i < activity.length; i++) {
+            if(activity[i]) {
+                IntersectionNode n = (IntersectionNode) mapGraph.nodes[i];
+                set.add(new GeoPosition(n.latitudes, n.longitudes));
+            }
+        }
+
+        mainFrame.plotPoints(set);
+    }
+
     public void plotRoadOnMap(int startNodeID, int endNodeID, AlgorithmType algType, PriorityType priType) {
         System.out.println("Seraching for road between " + startNodeID + " and " + endNodeID + " using " + algType);
 
@@ -111,6 +125,8 @@ public class MapController {
         int hours = time / 3600;
         int minutes = (time % 3600) / 60;
         int seconds = time%60;
+
+        plotLatestActivity();
 
         mainFrame.setTimeLabel(String.format("%d:%02d:%02d", hours, minutes, seconds));
     }

@@ -7,6 +7,7 @@ import org.jxmapviewer.input.CenterMapListener;
 import org.jxmapviewer.input.PanKeyListener;
 import org.jxmapviewer.input.PanMouseInputListener;
 import org.jxmapviewer.input.ZoomMouseWheelListenerCursor;
+import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.viewer.*;
 
 import javax.swing.*;
@@ -14,6 +15,8 @@ import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -120,6 +123,7 @@ public class MainFrame extends JFrame {
 class MapPanel extends JXMapViewer {
 
     private WaypointPainter<Waypoint> waypointPainter;
+    private ActivityPainter activityPainter;
 
     public MapPanel() {
         super();
@@ -152,5 +156,38 @@ class MapPanel extends JXMapViewer {
         }
         waypointPainter.setWaypoints(wp);
         repaint();
+    }
+
+}
+
+class ActivityPainter implements Painter<MapPanel> {
+
+    private ArrayList<GeoPosition> points;
+
+    public ActivityPainter(ArrayList<GeoPosition> points) {
+        this.points = points;
+    }
+
+    @Override
+    public void paint(Graphics2D g, MapPanel map, int width, int height) {
+        g = (Graphics2D) g.create();
+
+        // convert from viewport to world bitmap
+        Rectangle rect = map.getViewportBounds();
+        g.translate(-rect.x, -rect.y);
+
+        //g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // do the drawing
+        g.setColor(Color.BLACK);
+        g.setStroke(new BasicStroke(4));
+
+        for(GeoPosition gp : points) {
+            Point2D pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
+
+            g.drawRect((int) pt.getX(), (int) pt.getY(), 1, 1);
+        }
+
+        g.dispose();
     }
 }

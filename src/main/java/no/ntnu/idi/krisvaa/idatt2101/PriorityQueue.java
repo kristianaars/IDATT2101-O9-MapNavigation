@@ -19,11 +19,11 @@ public class PriorityQueue {
         if(m < length) {
             int h = m + 1;
 
-            if(h < length && nodes[h].compareTo(nodes[m]) <= 0) {
+            if(h < length && nodes[h].compareTo(nodes[m]) < 0) {
                 m = h;
             }
 
-            if(nodes[m].compareTo(nodes[i]) <= 0) {
+            if(nodes[m].compareTo(nodes[i]) < 0) {
                 swap(i, m);
                 fixHeap(m);
             }
