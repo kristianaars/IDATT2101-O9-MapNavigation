@@ -36,7 +36,7 @@ public class MapGraph {
                 System.out.println("Calculating landmark " + landmarkIDs[i]);
                 for(int j = 0; j < nodeCount; j++) {
                     Node n = nodes[j];
-                    distances[i][j][k] = ((IntersectionPredecessor)n.predecessor).distance;
+                    distances[i][j][k] = ((IntersectionPredecessor)n.predecessor).time;
                 }
             }
 
@@ -266,6 +266,7 @@ public class MapGraph {
                         int targetToLandmark = landmarkTable[l][endNodeID][1];
                         int nodeToLandmark = landmarkTable[l][activeNode.nodeNumber][1];
                         int diff2 = nodeToLandmark - targetToLandmark;
+                        if(diff2 < 0) { diff2 = 0; }
 
                         if(diff1 > highestDiff || diff2 > highestDiff) {
                             if(diff1 > diff2) { highestDiff = diff1; }
@@ -273,8 +274,8 @@ public class MapGraph {
                         }
                     }
 
-                    neighborNode.distanceToTarget = highestDiff;
-                    //neighborNode.distanceToTarget = (int) ((highestDiff/(((float)highestSpeedLimit*1000f)/3600f))*1000f);
+                    //Time 0.9 to lower the effect on the priority queue. This opens the algorithm to search for more nodes.
+                    neighborNode.distanceToTarget = (int) (highestDiff*0.90);
                     priorityQueue.insert(e.to);
                 }
             }
@@ -417,8 +418,7 @@ class Node implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        if(predecessor.distanceToTarget!=0) return Integer.compare(this.predecessor.distance + this.predecessor.distanceToTarget, ((Node)o).predecessor.distance + ((Node)o).predecessor.distanceToTarget);
-        return Integer.compare(this.predecessor.totalWeight, ((Node)o).predecessor.totalWeight);
+        return Integer.compare(this.predecessor.totalWeight + this.predecessor.distanceToTarget, ((Node)o).predecessor.totalWeight + ((Node)o).predecessor.distanceToTarget);
     }
 }
 

@@ -23,7 +23,7 @@ public class PriorityQueue {
                 m = h;
             }
 
-            if(nodes[m].compareTo(nodes[i]) < 0) {
+            if(nodes[m].compareTo(nodes[i]) <= 0) {
                 swap(i, m);
                 fixHeap(m);
             }
@@ -45,7 +45,7 @@ public class PriorityQueue {
         int i = length++;
         nodes[i] = n;
         int f;
-        while(i > 0 && nodes[i].compareTo(nodes[f=parent(i)]) < 0) {
+        while(i > 0 && nodes[i].compareTo(nodes[f=parent(i)]) <= 0) {
             swap(i, f);
             i = f;
         }
