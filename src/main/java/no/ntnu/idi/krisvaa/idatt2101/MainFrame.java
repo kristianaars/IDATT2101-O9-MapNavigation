@@ -37,7 +37,11 @@ public class MainFrame extends JFrame {
 
     private MapPanel mapPanel;
 
+    private JPanel mainPanel;
+
     private MapController mapController;
+
+    private JLabel status;
 
     public MainFrame(MapController mapController) {
         super();
@@ -202,16 +206,26 @@ public class MainFrame extends JFrame {
         mapPanel = new MapPanel();
         mapPanel.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
-        JPanel mainPanel = new JPanel();
+        mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
 
         mainPanel.add(toolbar, BorderLayout.PAGE_START);
         mainPanel.add(infoPanel, BorderLayout.LINE_START);
         mainPanel.add(mapPanel, BorderLayout.CENTER);
-        this.setContentPane(mainPanel);
+
+        JPanel statusPanel = new JPanel(new GridBagLayout());
+        status = new JLabel("status_message");
+        statusPanel.add(status);
+
+        this.setContentPane(statusPanel);
 
         this.setMinimumSize(new Dimension(1200, 800));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    }
+
+    public void updateStatus(String s) {
+        if(s == null) {this.setContentPane(mainPanel); this.repaint(); this.revalidate(); mainPanel.repaint(); }
+        else status.setText(s);
     }
 
     private void initiateMapSearch(AlgorithmType algType) {
@@ -266,7 +280,7 @@ class MapPanel extends JXMapViewer {
         this.setOverlayPainter(waypointPainter);
 
         this.setZoom(15);
-        this.setAddressLocation(new GeoPosition(66.0017187, -16.5130859));
+        this.setAddressLocation(new GeoPosition(64.5958512, 18.6775603));
     }
 
     public void plotPoints(Set<GeoPosition> points) {

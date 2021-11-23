@@ -23,6 +23,10 @@ public class MapController {
     private MapGraph mapGraph;
 
     public MapController(String intersectioNodeFile, String roadEdgeFile, String landmarkFile, String pointsOfInterestFile, int[] landmarkNodes) throws IOException {
+        mainFrame = new MainFrame(this);
+
+        mainFrame.setVisible(true);
+
         if(!new File(intersectioNodeFile).exists()) {
             System.out.println("Unable to find intersection node file with filename " + intersectioNodeFile + "... Starting download.");
             downloadFile("http://www.iie.ntnu.no/fag/_alg/Astjerne/opg/norden/noder.txt", intersectioNodeFile);
@@ -38,17 +42,17 @@ public class MapController {
             downloadFile("http://www.iie.ntnu.no/fag/_alg/Astjerne/opg/norden/interessepkt.txt", pointsOfInterestFile);
         }
 
+        mainFrame.updateStatus("Loading map-nodes and map-edges...");
         System.out.println("Loading map-data...");
         mapGraph = MapGraph.buildFromInputStream(new FileInputStream(intersectioNodeFile), new FileInputStream(roadEdgeFile), new FileInputStream(pointsOfInterestFile));
 
+        mainFrame.updateStatus("Loading landmarks...");
         System.out.println("Loading landmarks...");
         loadLandmarks(mapGraph, landmarkNodes, landmarkFile);
 
         System.out.println("Map-data finished loading!");
 
-        mainFrame = new MainFrame(this);
-
-        mainFrame.setVisible(true);
+        mainFrame.updateStatus(null);
 
         plotNodesOnMap(landmarkNodes);
     }
@@ -65,9 +69,9 @@ public class MapController {
             long lastPrint = System.currentTimeMillis();
 
             while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                if(System.currentTimeMillis() - lastPrint > 1000) {
+                if(System.currentTimeMillis() - lastPrint > 50) {
                     lastPrint = System.currentTimeMillis();
-                    System.out.println("Downloaded " + (bytesWritten)/1000000f + " MB from " + url);
+                    mainFrame.updateStatus(String.format("Downloading map data... %.2f MB from %s", (bytesWritten/1000000f), url));
                 }
                 bytesWritten+=1024;
                 fileOutputStream.write(dataBuffer, 0, bytesRead);
@@ -90,6 +94,7 @@ public class MapController {
             mapGraph.loadLandmarks(new FileInputStream(f));
 
             if(Arrays.compare(mapGraph.landmarkIDs, landmarkNodes) != 0) {
+                mainFrame.updateStatus("Mismatch in landmark nodes between file and the provided landmarks.");
                 System.out.println("Mismatch in landmark nodes between file and the provided landmarks.");
             } else {
                 generateNewFile = false;
@@ -97,8 +102,10 @@ public class MapController {
         }
 
         if(generateNewFile) {
-            System.out.println("Valid landmark file not found. Generating landmarks...");
+            mainFrame.updateStatus("Valid landmark file not found. Generating landmarks... (this might take a while)");
+            System.out.println("Valid landmark file not found. Generating new landmark distances...");
             mapGraph.generateLandmarks(landmarkNodes);
+            mainFrame.updateStatus("Landmarks generated. Saving to file...");
             System.out.println("Landmarks generated. Saving to file...");
             mapGraph.saveLandmarks(new FileOutputStream(f));
         }
