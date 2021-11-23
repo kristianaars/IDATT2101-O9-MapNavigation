@@ -3,6 +3,7 @@ package no.ntnu.idi.krisvaa.idatt2101;
 import org.jxmapviewer.viewer.GeoPosition;
 
 import java.io.*;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -14,23 +15,29 @@ public class MapController {
                 "norden_kanter.txt",
                 "norden_landemerker.lm",
                 "norden_interessepkt.txt",
-                new int[]{2151398, 2724481, 251295, 1045921, 3209493, 6579443, 5492224}
+                new int[]{2151398, 2724481, 251295, 1045921, 3209493, 6579443, 5492224, 6487468}
         );
-
-        /*MapController mc = new MapController(
-                "island_noder.txt",
-                "island_kanter.txt",
-                "island_landemerker.lm",
-                "island_interessepkt.txt",
-                new int[]{6, 55, 20030, 34}
-        );*/
-
     }
 
     private MainFrame mainFrame;
     private MapGraph mapGraph;
 
     public MapController(String intersectioNodeFile, String roadEdgeFile, String landmarkFile, String pointsOfInterestFile, int[] landmarkNodes) throws IOException {
+        if(!new File(intersectioNodeFile).exists()) {
+            System.out.println("Unable to find intersection node file with filename " + intersectioNodeFile + "... Starting download.");
+            downloadFile("http://www.iie.ntnu.no/fag/_alg/Astjerne/opg/norden/noder.txt", intersectioNodeFile);
+        }
+
+        if(!new File(roadEdgeFile).exists()) {
+            System.out.println("Unable to find road edge file with filename " + roadEdgeFile + "... Starting download.");
+            downloadFile("http://www.iie.ntnu.no/fag/_alg/Astjerne/opg/norden/kanter.txt", roadEdgeFile);
+        }
+
+        if(!new File(pointsOfInterestFile).exists()) {
+            System.out.println("Unable to find point of interest file with filename " + roadEdgeFile + "... Starting download.");
+            downloadFile("http://www.iie.ntnu.no/fag/_alg/Astjerne/opg/norden/interessepkt.txt", pointsOfInterestFile);
+        }
+
         System.out.println("Loading map-data...");
         mapGraph = MapGraph.buildFromInputStream(new FileInputStream(intersectioNodeFile), new FileInputStream(roadEdgeFile), new FileInputStream(pointsOfInterestFile));
 
@@ -45,6 +52,34 @@ public class MapController {
 
         plotNodesOnMap(landmarkNodes);
     }
+
+    public void downloadFile(String url, String fileOutput) {
+        System.out.println("Initiating download... Saving " + url + " as " + fileOutput);
+
+        try (BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
+             FileOutputStream fileOutputStream = new FileOutputStream(fileOutput)) {
+            byte dataBuffer[] = new byte[1024];
+            int bytesWritten = 0;
+            int bytesRead;
+
+            long lastPrint = System.currentTimeMillis();
+
+            while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                if(System.currentTimeMillis() - lastPrint > 1000) {
+                    lastPrint = System.currentTimeMillis();
+                    System.out.println("Downloaded " + (bytesWritten)/1000000f + " MB from " + url);
+                }
+                bytesWritten+=1024;
+                fileOutputStream.write(dataBuffer, 0, bytesRead);
+            }
+
+            System.out.println("Download complete! " + (bytesWritten)/1000000f + " MB saved to " + fileOutput);
+        } catch (IOException e) {
+            // handle exception
+        }
+
+    }
+
 
     private void loadLandmarks(MapGraph mapGraph, int[] landmarkNodes, String landmarkFile) throws IOException {
         File f = new File(landmarkFile);

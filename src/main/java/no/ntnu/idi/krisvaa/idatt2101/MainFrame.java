@@ -2,12 +2,10 @@ package no.ntnu.idi.krisvaa.idatt2101;
 
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.OSMTileFactoryInfo;
-import org.jxmapviewer.google.GoogleMapsTileFactoryInfo;
 import org.jxmapviewer.input.CenterMapListener;
 import org.jxmapviewer.input.PanKeyListener;
 import org.jxmapviewer.input.PanMouseInputListener;
 import org.jxmapviewer.input.ZoomMouseWheelListenerCursor;
-import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.viewer.*;
 
 import javax.swing.*;
@@ -15,8 +13,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.event.MouseInputListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -213,7 +209,6 @@ public class MainFrame extends JFrame {
         mainPanel.add(infoPanel, BorderLayout.LINE_START);
         mainPanel.add(mapPanel, BorderLayout.CENTER);
         this.setContentPane(mainPanel);
-
 
         this.setMinimumSize(new Dimension(1200, 800));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
