@@ -23,7 +23,7 @@ public class MainFrame extends JFrame {
     private JTextField endNodeTextField;
     private JButton ALTAlgorithmButton;
     private JButton dijkstrasAlgorithmButton;
-    private JComboBox<String> prioritySelector;
+    private JComboBox<PriorityType> prioritySelector;
 
     private JLabel lengthLabel;
     private JLabel timeLabel;
@@ -43,7 +43,7 @@ public class MainFrame extends JFrame {
         endNodeTextField.setPreferredSize(new Dimension(60, 25));
         ALTAlgorithmButton = new JButton("ALT-Algorithm");
         dijkstrasAlgorithmButton = new JButton("Dijkstras Algorithm");
-        prioritySelector = new JComboBox<>(new String[]{"Travel Time", "Road Length"});
+        prioritySelector = new JComboBox<PriorityType>(PriorityType.values());
 
         lengthLabel = new JLabel();
         lengthLabel.setSize(120, 25);
@@ -52,12 +52,23 @@ public class MainFrame extends JFrame {
         timeLabel.setSize(120, 25);
         setTimeLabel("");
 
-        dijkstrasAlgorithmButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                initiateMapSearch();
+        dijkstrasAlgorithmButton.addActionListener(e -> {
+            initiateMapSearch(AlgorithmType.Dijkstras);
+        });
+
+        ALTAlgorithmButton.addActionListener(e -> {
+            initiateMapSearch(AlgorithmType.ALT);
+        });
+
+        prioritySelector.addActionListener(e -> {
+            if(prioritySelector.getSelectedItem() == PriorityType.Length) {
+                ALTAlgorithmButton.setEnabled(false);
+            } else {
+                ALTAlgorithmButton.setEnabled(true);
             }
         });
+
+        prioritySelector.setSelectedItem(PriorityType.Time);
 
         JPanel toolbar = new JPanel();
         toolbar.setLayout(new FlowLayout());
@@ -90,15 +101,13 @@ public class MainFrame extends JFrame {
         this.setSize(1000, 600);
         this.setMinimumSize(new Dimension(1050, 600));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-
-        ALTAlgorithmButton.setEnabled(false);
-        prioritySelector.setEnabled(false);
     }
 
-    private void initiateMapSearch() {
+    private void initiateMapSearch(AlgorithmType algType) {
         int startNodeID = Integer.parseInt(startNodeTextField.getText());
         int endNodeID = Integer.parseInt(endNodeTextField.getText());
-        mapController.plotRoadOnMap(startNodeID, endNodeID, null, null);
+        PriorityType priorityType = (PriorityType)prioritySelector.getSelectedItem();
+        mapController.plotRoadOnMap(startNodeID, endNodeID, algType, priorityType);
     }
 
     public void plotPoints(Set<GeoPosition> waypoints) { mapPanel.plotPoints(waypoints); }
