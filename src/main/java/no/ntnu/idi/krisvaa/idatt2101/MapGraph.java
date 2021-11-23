@@ -273,7 +273,8 @@ public class MapGraph {
                         }
                     }
 
-                    neighborNode.distanceToTarget = (int) ((highestDiff/(((float)highestSpeedLimit*1000f)/3600f))*100f);
+                    neighborNode.distanceToTarget = highestDiff;
+                    //neighborNode.distanceToTarget = (int) ((highestDiff/(((float)highestSpeedLimit*1000f)/3600f))*1000f);
                     priorityQueue.insert(e.to);
                 }
             }
@@ -416,7 +417,7 @@ class Node implements Comparable {
 
     @Override
     public int compareTo(Object o) {
-        if(predecessor.distanceToTarget!=0) return Integer.compare(this.predecessor.totalWeight + this.predecessor.distanceToTarget, ((Node)o).predecessor.totalWeight + ((Node)o).predecessor.distanceToTarget);
+        if(predecessor.distanceToTarget!=0) return Integer.compare(this.predecessor.distance + this.predecessor.distanceToTarget, ((Node)o).predecessor.distance + ((Node)o).predecessor.distanceToTarget);
         return Integer.compare(this.predecessor.totalWeight, ((Node)o).predecessor.totalWeight);
     }
 }

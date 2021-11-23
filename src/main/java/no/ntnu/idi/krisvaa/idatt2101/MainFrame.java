@@ -11,6 +11,8 @@ import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.viewer.*;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.event.MouseInputListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -168,29 +170,41 @@ public class MainFrame extends JFrame {
 
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.PAGE_AXIS));
+        infoPanel.add(Box.createVerticalStrut(20));
         infoPanel.add(infoPanelHeader);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(startPositionLabel);
         infoPanel.add(startPosition);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(endPositionLabel);
         infoPanel.add(endPosition);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(lengthLabel);
         infoPanel.add(lengthTextField);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(timeLabel);
         infoPanel.add(timeTextField);
 
+        infoPanel.add(Box.createVerticalStrut(20));
         infoPanel.add(algorithmInfoHeader);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(algorithmTypeLabel);
         infoPanel.add(algorithmType);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(numberOfNodesLabel);
         infoPanel.add(numberOfNodes);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(algorithmExecutionTimeLabel);
         infoPanel.add(algorithmExecutionTime);
+        infoPanel.add(Box.createVerticalStrut(5));
         infoPanel.add(priorityTypeLabel);
         infoPanel.add(priorityType);
 
+        infoPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         infoPanel.setPreferredSize(new Dimension(250, 0));
 
         mapPanel = new MapPanel();
+        mapPanel.setBorder(new LineBorder(Color.LIGHT_GRAY));
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BorderLayout());
@@ -200,14 +214,15 @@ public class MainFrame extends JFrame {
         mainPanel.add(mapPanel, BorderLayout.CENTER);
         this.setContentPane(mainPanel);
 
-        this.setSize(1000, 600);
-        this.setMinimumSize(new Dimension(1050, 600));
+
+        this.setMinimumSize(new Dimension(1200, 800));
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
     private void initiateMapSearch(AlgorithmType algType) {
         int startNodeID = Integer.parseInt(startNodeTextField.getText());
-        int endNodeID = Integer.parseInt(endNodeTextField.getText());
+        int endNodeID = 0;
+        if(endNodeTextField.isEnabled()) endNodeID = Integer.parseInt(endNodeTextField.getText());;
         PriorityType priorityType = (PriorityType)prioritySelector.getSelectedItem();
         mapController.plotRoadOnMap(startNodeID, endNodeID, algType, priorityType);
     }
@@ -255,7 +270,8 @@ class MapPanel extends JXMapViewer {
         waypointPainter = new WaypointPainter<>();
         this.setOverlayPainter(waypointPainter);
 
-        this.setZoom(1);
+        this.setZoom(15);
+        this.setAddressLocation(new GeoPosition(66.0017187, -16.5130859));
     }
 
     public void plotPoints(Set<GeoPosition> points) {

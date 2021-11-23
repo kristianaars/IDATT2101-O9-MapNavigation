@@ -9,21 +9,21 @@ import java.util.HashSet;
 public class MapController {
 
     public static void main(String[] args) throws IOException {
-        /*MapController mc = new MapController(
+        MapController mc = new MapController(
                 "norden_noder.txt",
                 "norden_kanter.txt",
                 "norden_landemerker.lm",
                 "norden_interessepkt.txt",
                 new int[]{2151398, 2724481, 251295, 1045921, 3209493, 6579443, 5492224}
-        );*/
+        );
 
-        MapController mc = new MapController(
+        /*MapController mc = new MapController(
                 "island_noder.txt",
                 "island_kanter.txt",
                 "island_landemerker.lm",
                 "island_interessepkt.txt",
                 new int[]{6, 55, 20030, 34}
-        );
+        );*/
 
     }
 
