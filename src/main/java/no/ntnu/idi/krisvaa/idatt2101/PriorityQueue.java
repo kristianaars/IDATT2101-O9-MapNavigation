@@ -5,7 +5,7 @@ package no.ntnu.idi.krisvaa.idatt2101;
  */
 public class PriorityQueue {
 
-    int length = -1;
+    int length;
     Node[] nodes;
 
     public PriorityQueue(int size) {
@@ -19,11 +19,11 @@ public class PriorityQueue {
         if(m < length) {
             int h = m + 1;
 
-            if(h < length && nodes[h].predecessor.totalWeight < nodes[m].predecessor.totalWeight) {
+            if(h < length && nodes[h].compareTo(nodes[m]) <= 0) {
                 m = h;
             }
 
-            if(nodes[m].predecessor.totalWeight < nodes[i].predecessor.totalWeight) {
+            if(nodes[m].compareTo(nodes[i]) <= 0) {
                 swap(i, m);
                 fixHeap(m);
             }
